@@ -1,29 +1,44 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 import os
-import csv
+from os.path import join, dirname, realpath
+import pandas as pd
 
 # Well, I need to get CSV FROM THE USER AND GET THE DATA FROM THE CSV FOR PLOTTING
 # the graph with chart.js 
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    data = [
-        ("01-01-2018", "100"),
-        ("01-02-2018", "200"),
-        ("01-03-2018", "300"),
-        ("01-04-2018", "100"),
-        ("01-05-2018", "500"),
-        ("01-06-2018", "600"),
-        ("01-07-2018", "700"),
-    ]
+#enable the DEBUG mode
+app.config['DEBUG'] = True
+
+#upload folder
+UPLOAD_FOLDER = 'static/files'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+# root URl
+@app.route('/')
+def index():
+    return render_template('request.html')
+
+# get the uploaded files
+@app.route('/', methods=['POST'])
+def uploadFiles():
+    uploaded_file = request.files['file']
+    if uploaded_file.filename != '':
+        # set the file path
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file.filename)
+        # save the file
+        uploaded_file.save(file_path)
+        parseCSV(file_path)
     
-    labels = [row[0] for row in data]
-    values = [row[1] for row in data]
+    return redirect(url_for('request'))
 
-    return render_template("graph.html", values=values, labels=labels)
-
-@app.route('/about')
-def about():
-    return render_template("about.html")
+def parseCSV(filePath):
+    # Column names
+    col_names = "label", "date", "pt1", "pt2", "pt3", "pt4"
+    # parse using pandas
+    csvData = pd.read_csv(filePath, names=col_names, header=None)
+    
+    for i, row in csvData.iterrows():
+        print(i , row["label"], row["date"], row["pt1"], row["pt2"], row["pt3"], row["pt4"])

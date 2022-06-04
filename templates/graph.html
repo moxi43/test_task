@@ -9,6 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.0/dist/chart.min.js"></script>
 </head>
 
+<form action="upload.html" method="post" enctype="multipart/form-data">
+    <input type="file" name="fileupload" id="fileToUpload">
+    <input type="submit" value="Upload File" name="submit">
+</form>
+
 <body>
     <canvas id="lineChart" width="900" height="400"> </canvas>
     <script>
@@ -16,11 +21,11 @@
         var lineChart = new Chart(ctx, {
             type: "line",
             data: {
-                labels: {{ labels | safe }},
+                labels: {{ dates | safe }},
         datasets: [
             {
                 label: "Data points",
-                data: {{ values | safe }},
+                data: {{ values  | safe }},
             fill: false,
             borderColor: "rgb(75, 192, 192)",
             lineTension: 0.1
