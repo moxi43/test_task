@@ -1,44 +1,37 @@
-from flask import Flask, render_template, request, redirect, url_for
+from crypt import methods
+from flask import Flask, render_template, request, redirect
 import os
-from os.path import join, dirname, realpath
+import csv
 import pandas as pd
-
-# Well, I need to get CSV FROM THE USER AND GET THE DATA FROM THE CSV FOR PLOTTING
-# the graph with chart.js 
 
 app = Flask(__name__)
 
-#enable the DEBUG mode
-app.config['DEBUG'] = True
-
-#upload folder
-UPLOAD_FOLDER = 'static/files'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-
-# root URl
-@app.route('/')
+@app.route('/', methods=["GET", "POST"])
 def index():
-    return render_template('request.html')
+    data = []
+    if request.method == 'POST':
+        if request.files:
+            uploaded_file = request.files['filename'] # This line uses the same variable and worked fine
+            filepath = os.path.join(app.config['FILE_UPLOADS'], uploaded_file.filename)
+            uploaded_file.save(filepath)
+            with open(filepath) as file:
+                csv_file = csv.reader(file)
+                for row in csv_file:
+                    data.append(row)
+            return redirect(request.url)
+    return render_template('index.html', data=data)
 
-# get the uploaded files
-@app.route('/', methods=['POST'])
-def uploadFiles():
-    uploaded_file = request.files['file']
-    if uploaded_file.filename != '':
-        # set the file path
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file.filename)
-        # save the file
-        uploaded_file.save(file_path)
-        parseCSV(file_path)
-    
-    return redirect(url_for('request'))
 
-def parseCSV(filePath):
-    # Column names
-    col_names = "label", "date", "pt1", "pt2", "pt3", "pt4"
-    # parse using pandas
-    csvData = pd.read_csv(filePath, names=col_names, header=None)
+@app.route('/graph', methods=["GET"])
+def graph():
+    df = pd.read_csv('uploads/table.csv')
+    label = list(set(df['code'].tolist())   )
+    dates = df['date'].tolist()
+    values = [[45, 33, 41], [21, 23, 54], [13, 2, 3]]
+    #values = df['pt1'].tolist()
+
+    return render_template('graph.html', label=label, dates=dates, values=values)
     
-    for i, row in csvData.iterrows():
-        print(i , row["label"], row["date"], row["pt1"], row["pt2"], row["pt3"], row["pt4"])
+    
+
+app.config['FILE_UPLOADS'] = "uploads/"
